@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QListWidget, QStackedWidget, QGridLayout,
     QPushButton, QDialog, QFormLayout, QLineEdit, QMessageBox,
-    QSpinBox, QTableWidget, QTableWidgetItem, QHeaderView
+    QSpinBox, QTableWidget, QTableWidgetItem, QHeaderView, QTableView
 )
 from PyQt6.QtCore import QDate, QDateTime, Qt
 from PyQt6.QtGui import QFont
@@ -214,9 +214,10 @@ class CalendarPage(QWidget):
 
 # ===================== 录入对话框 =====================
 class AddDataDialog(QDialog):
-    def __init__(self, date_str):
+    def __init__(self, date_str,record_id=None):
         super().__init__()
         self.date = date_str
+        self.record_id = record_id
         self.setWindowTitle(f"录入 - {date_str}")
         self.setFixedSize(420, 580)
         self.widgets = {}
@@ -251,17 +252,18 @@ class AddDataDialog(QDialog):
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("""
-                    SELECT id FROM records 
-                    WHERE date=? AND name=?
-                    LIMIT 1
-                """, (self.date, name))
+        if self.record_id is None:
+            sql = "SELECT id FROM records WHERE date=? AND name=? LIMIT 1"
+            cursor.execute(sql, (self.date, name))
 
+        else:
+            sql = "SELECT id FROM records WHERE date=? AND name=? AND id <> ? LIMIT 1"
+            cursor.execute(sql, (self.date, name,self.record_id))
 
-        exists = cursor.fetchone() is not None
+        has_same = cursor.fetchone()
 
         # 2. 如果已存在，弹出提醒
-        if exists:
+        if has_same:
             QMessageBox.warning(
                 self,
                 "提醒",
@@ -329,11 +331,19 @@ class DataQueryPage(QWidget):
         layout.addLayout(bar)
 
         self.table = QTableWidget()
+        # self.table = QTableView()
+
         # 允许选中整行
         # self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)     # 禁止编辑
         # self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)   # 彻底去掉光标！
         # self.table.setDisabled(False)  # 保持可用，但彻底无光标
+
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # 核心：允许拖动调整列宽
+
+
+
         layout.addWidget(self.table)
 
     def query(self,by_sorting):
@@ -355,7 +365,7 @@ class DataQueryPage(QWidget):
         for r in range(df.shape[0]):
             for c in range(df.shape[1]):
                 self.table.setItem(r, c, QTableWidgetItem(str(df.iloc[r, c])))
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         # ===================== 修改选中行 =====================
     def edit_row(self):
@@ -383,8 +393,8 @@ class DataQueryPage(QWidget):
             return
 
         # 打开修改对话框
-        date_str = data[1]
-        dlg = AddDataDialog(date_str)
+        date_str = data[1] # 获取日期
+        dlg = AddDataDialog(date_str,record_id=record_id)
 
         # 自动填入原有数据
         fields = ["id", "date","created_at"] + ENGLISH_FIELDS
@@ -499,7 +509,7 @@ class StatsPage(QWidget):
         for r in range(df_group.shape[0]):
             for c in range(df_group.shape[1]):
                 self.table.setItem(r, c, QTableWidgetItem(str(df_group.iloc[r, c])))
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         # ✅ 修复：启用打印按钮+强制刷新
         self.btn_export.setEnabled(True)
