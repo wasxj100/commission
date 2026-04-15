@@ -339,8 +339,7 @@ class DataQueryPage(QWidget):
         # self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)   # 彻底去掉光标！
         # self.table.setDisabled(False)  # 保持可用，但彻底无光标
 
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # 核心：允许拖动调整列宽
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)  # 核心：允许拖动调整列宽
 
 
 
@@ -509,7 +508,7 @@ class StatsPage(QWidget):
         for r in range(df_group.shape[0]):
             for c in range(df_group.shape[1]):
                 self.table.setItem(r, c, QTableWidgetItem(str(df_group.iloc[r, c])))
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         # ✅ 修复：启用打印按钮+强制刷新
         self.btn_export.setEnabled(True)
