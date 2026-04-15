@@ -286,10 +286,14 @@ class DataQueryPage(QWidget):
 
         # ========== 修改、删除按钮 ==========
         self.btn_edit = QPushButton("修改选中")
-        self.btn_edit.clicked.connect(self.edit_row)
+        try:
+            self.btn_edit.clicked.connect(self.edit_row)
+        except Exception as e:
+            print()
         self.btn_edit.setFixedHeight(36)
 
         self.btn_del = QPushButton("删除选中")
+
         self.btn_del.clicked.connect(self.delete_row)
         self.btn_del.setFixedHeight(36)
 
@@ -302,7 +306,10 @@ class DataQueryPage(QWidget):
 
         self.table = QTableWidget()
         # 允许选中整行
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        # self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)     # 禁止编辑
+        # self.table.setFocusPolicy(Qt.FocusPolicy.NoFocus)   # 彻底去掉光标！
+        # self.table.setDisabled(False)  # 保持可用，但彻底无光标
         layout.addWidget(self.table)
 
     def query(self):
@@ -312,9 +319,9 @@ class DataQueryPage(QWidget):
             self.table.setRowCount(0)
             return
         _df = df.sort_values(by='name', ascending=True)
-        df = _df.drop(df.columns[[0, 2]], axis=1)
+        df = _df.drop(df.columns[[2]], axis=1)
         # rename_map = {"date": "日期", "created_at": "创建时间", "id": "ID"}
-        rename_map = {"date": "日期",}
+        rename_map = {"id": "ID","date": "日期" }
         for ch, en in FIELD_MAP: rename_map[en] = ch
         df = df.rename(columns=rename_map)
 
@@ -329,16 +336,18 @@ class DataQueryPage(QWidget):
         # ===================== 修改选中行 =====================
     def edit_row(self):
         row = self.table.currentRow()
+        print(row)
         if row < 0:
             QMessageBox.warning(self, "提示", "请先选中一行数据")
             return
 
         # 从表格取ID
         id_item = self.table.item(row, 0)
+        print(id_item)
         if not id_item:
             return
         record_id = id_item.text()
-
+        print(record_id)
         # 从数据库读取原数据
         conn = sqlite3.connect("commission.db")
         cursor = conn.cursor()
@@ -354,7 +363,7 @@ class DataQueryPage(QWidget):
         dlg = AddDataDialog(date_str)
 
         # 自动填入原有数据
-        fields = ["id", "date", "name"] + ITEM_FIELDS + ["created_at"]
+        fields = ["id", "date","created_at"] + ENGLISH_FIELDS
         for i, (ch, en) in enumerate(FIELD_MAP):
             val = data[fields.index(en)]
             dlg.widgets[en].setText(str(val))
