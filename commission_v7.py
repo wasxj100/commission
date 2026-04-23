@@ -363,24 +363,25 @@ class DataQueryPage(QWidget):
         self.table.setHorizontalHeaderLabels(df.columns.tolist())
         for r in range(df.shape[0]):
             for c in range(df.shape[1]):
-                self.table.setItem(r, c, QTableWidgetItem(str(df.iloc[r, c])))
+                # self.table.setItem(r, c, QTableWidgetItem(str(df.iloc[r, c])))
+                item = QTableWidgetItem(str(df.iloc[r, c]))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # 这一行 = 居中
+                self.table.setItem(r, c, item)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
 
         # ===================== 修改选中行 =====================
     def edit_row(self):
         row = self.table.currentRow()
-        print(row)
+        # print(row)
         if row < 0:
             QMessageBox.warning(self, "提示", "请先选中一行数据")
             return
 
         # 从表格取ID
         id_item = self.table.item(row, 0)
-        print(id_item)
         if not id_item:
             return
         record_id = id_item.text()
-        print(record_id)
         # 从数据库读取原数据
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -390,7 +391,6 @@ class DataQueryPage(QWidget):
 
         if not data:
             return
-
         # 打开修改对话框
         date_str = data[1] # 获取日期
         dlg = AddDataDialog(date_str,record_id=record_id)
@@ -428,7 +428,7 @@ class DataQueryPage(QWidget):
         QMessageBox.information(self, "成功", "删除成功")
         self.query(BY)  # 刷新
 
-# ###################### 数据统计页 + 打印功能（修复版） ###########################
+# ---------------------------- 数据统计页 + 打印功能（修复版） ------------------------------------
 
 class StatsPage(QWidget):
     def __init__(self):
@@ -507,7 +507,10 @@ class StatsPage(QWidget):
 
         for r in range(df_group.shape[0]):
             for c in range(df_group.shape[1]):
-                self.table.setItem(r, c, QTableWidgetItem(str(df_group.iloc[r, c])))
+                # self.table.setItem(r, c, QTableWidgetItem(str(df_group.iloc[r, c])))
+                item = QTableWidgetItem(str(df_group.iloc[r, c]))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)  # 这一行 = 居中
+                self.table.setItem(r, c, item)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
         # ✅ 修复：启用打印按钮+强制刷新
